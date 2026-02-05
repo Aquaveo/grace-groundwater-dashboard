@@ -73,3 +73,13 @@ arcgis-map {
     font-weight: bold;
     text-align: center;
 }
+
+/* modebar is the plotly control buttons on the top right */
+.modebar-btn {
+    padding: 6px !important;
+}
+
+.modebar-btn svg {
+    width: 24px !important;
+    height: 24px !important;
+}

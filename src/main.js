@@ -33,6 +33,48 @@ import {createLinePlot, createUncertaintyBand, meanIgnoringNaN} from "./helpers.
 
 Plotly.register([Scatter]);
 
+// Configuration state
+const displayConfig = {
+  showBorders: true,
+  borderWidth: 0.5,
+  colorPalette: "default"
+};
+
+// Color palettes - stops array allows flexible number of color stops
+const colorPalettes = {
+  default: [
+    {value: -30, color: "#ff004e", label: "-30 cm"},
+    {value: 0, color: "#ffffff", label: "0"},
+    {value: 30, color: "#1c6eec", label: "30 cm"}
+  ],
+  viridis: [
+    {value: -30, color: "#440154", label: "-30 cm"},
+    {value: 0, color: "#21918c", label: "0"},
+    {value: 30, color: "#fde725", label: "30 cm"}
+  ],
+  cividis: [
+    {value: -30, color: "#00204d", label: "-30 cm"},
+    {value: 0, color: "#7c7b78", label: "0"},
+    {value: 30, color: "#ffea46", label: "30 cm"}
+  ],
+  "brown-teal": [
+    {value: -30, color: "#8c510a", label: "-30 cm"},
+    {value: 0, color: "#f5f5f5", label: "0"},
+    {value: 30, color: "#01665e", label: "30 cm"}
+  ],
+  "purple-green": [
+    {value: -30, color: "#762a83", label: "-30 cm"},
+    {value: 0, color: "#f7f7f7", label: "0"},
+    {value: 30, color: "#1b7837", label: "30 cm"}
+  ],
+  "rainbow": [
+    {value: -30, color: "#d73027", label: "-30 cm"},
+    {value: -10, color: "#fee08b", label: "-10 cm"},
+    {value: 10, color: "#a6d96a", label: "10 cm"},
+    {value: 30, color: "#1a6698", label: "30 cm"}
+  ]
+};
+
 
 const zarrUrl = "https://d2grb3c773p1iz.cloudfront.net/groundwater/grace025gwanomaly.zarr";
 
@@ -237,23 +279,24 @@ const main = async ({polygon, zoomPromise}) => {
     {name: "twsaValue", type: "double"}
   ];
 
-  // Create renderer for a given field (same color bar for all)
-  const createRenderer = (field) => ({
-    type: "simple",
-    symbol: {
-      type: "simple-fill",
-      outline: {color: [0, 0, 0, 1], width: 0.5}
-    },
-    visualVariables: [{
-      type: "color",
-      field,
-      stops: [
-        {value: -30, color: "#ff004e", label: "-30 cm"},
-        {value: 0, color: "#ffffff", label: "0"},
-        {value: 30, color: "#1c6eec", label: "30 cm"}
-      ]
-    }]
-  });
+  // Create renderer for a given field using current display config
+  const createRenderer = (field) => {
+    const stops = colorPalettes[displayConfig.colorPalette];
+    return {
+      type: "simple",
+      symbol: {
+        type: "simple-fill",
+        outline: displayConfig.showBorders
+          ? {color: [0, 0, 0, 1], width: displayConfig.borderWidth}
+          : {color: [0, 0, 0, 0], width: 0}
+      },
+      visualVariables: [{
+        type: "color",
+        field,
+        stops
+      }]
+    };
+  };
 
   // 3 FeatureLayers sharing the same source, each with renderer for different field
   const gwaLayer = new FeatureLayer({
@@ -460,5 +503,73 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
     if (e.target.id === "info-modal") {
       e.target.classList.add("hidden");
     }
+  });
+
+  // Settings modal
+  const settingsModal = document.getElementById("settings-modal");
+  const borderToggle = document.getElementById("border-toggle");
+  const borderWidthSlider = document.getElementById("border-width");
+  const borderWidthValue = document.getElementById("border-width-value");
+
+  document.querySelector("#settings-button").addEventListener("click", () => {
+    settingsModal.classList.toggle("hidden");
+  });
+
+  document.getElementById("settings-close").addEventListener("click", () => {
+    settingsModal.classList.add("hidden");
+  });
+
+  settingsModal.addEventListener("click", (e) => {
+    if (e.target.id === "settings-modal") {
+      e.target.classList.add("hidden");
+    }
+  });
+
+  // Function to update all anomaly cell layer renderers
+  const updateAnomalyCellRenderers = () => {
+    const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "Anomaly Cells");
+    if (!anomalyCellsGroup?.layers) return;
+
+    const stops = colorPalettes[displayConfig.colorPalette];
+    anomalyCellsGroup.layers.forEach((layer) => {
+      const field = layer.renderer?.visualVariables?.[0]?.field;
+      if (!field) return;
+
+      layer.renderer = {
+        type: "simple",
+        symbol: {
+          type: "simple-fill",
+          outline: displayConfig.showBorders
+            ? {color: [0, 0, 0, 1], width: displayConfig.borderWidth}
+            : {color: [0, 0, 0, 0], width: 0}
+        },
+        visualVariables: [{
+          type: "color",
+          field,
+          stops
+        }]
+      };
+    });
+  };
+
+  // Border toggle
+  borderToggle.addEventListener("change", (e) => {
+    displayConfig.showBorders = e.target.checked;
+    updateAnomalyCellRenderers();
+  });
+
+  // Border width slider
+  borderWidthSlider.addEventListener("input", (e) => {
+    displayConfig.borderWidth = parseFloat(e.target.value);
+    borderWidthValue.textContent = `${displayConfig.borderWidth}px`;
+    updateAnomalyCellRenderers();
+  });
+
+  // Color palette radio buttons
+  document.querySelectorAll('input[name="color-palette"]').forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      displayConfig.colorPalette = e.target.value;
+      updateAnomalyCellRenderers();
+    });
   });
 });

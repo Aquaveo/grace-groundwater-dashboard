@@ -11,6 +11,9 @@
 <div class="nav-bar">
   <h1>GEOGLOWS GRACE Groundwater Assessment</h1>
   <div class="nav-buttons">
+    <button id="settings-button" class="icon-button" title="Settings">
+      <calcite-icon icon="gear" scale="l"></calcite-icon>
+    </button>
     <button id="info-button" class="icon-button" title="Info">
       <calcite-icon icon="information" scale="l"></calcite-icon>
     </button>
@@ -24,13 +27,14 @@
     <arcgis-expand slot="top-left" title="Basemap Gallery">
       <arcgis-basemap-gallery></arcgis-basemap-gallery>
     </arcgis-expand>
-    <arcgis-expand slot="top-left" title="Legend">
-      <arcgis-legend></arcgis-legend>
-    </arcgis-expand>
+<!--    <arcgis-expand slot="top-left" title="Legend">-->
+<!--      <arcgis-legend></arcgis-legend>-->
+<!--    </arcgis-expand>-->
     <!-- Top-right: Config/Info -->
     <arcgis-sketch slot="top-right" title="Drawing Tools" creation-mode="single"></arcgis-sketch>
     <arcgis-layer-list slot="top-right"></arcgis-layer-list>
     <!-- Bottom-left: Reference -->
+    <arcgis-legend slot="bottom-left"></arcgis-legend>
     <calcite-action slot="bottom-left" icon="refresh" id="refresh-layers"></calcite-action>
     <arcgis-scale-bar slot="bottom-left" bar-style="line" unit="dual"></arcgis-scale-bar>
     <!-- Bottom-right: Primary tool -->
@@ -38,6 +42,79 @@
   </arcgis-map>
   <div id="timeseries-plot" class="chart-container">
     <div class="centered-message">Select an aquifer or use the drawing tools to draw a polygon to get started.</div>
+  </div>
+</div>
+
+<div id="settings-modal" class="modal hidden">
+  <div class="modal-content settings-modal">
+    <h2>Display Settings</h2>
+    <hr>
+
+    <div class="settings-group">
+      <h3>Cell Borders</h3>
+      <div class="setting-row">
+        <label for="border-toggle">Show borders</label>
+        <input type="checkbox" id="border-toggle" checked>
+      </div>
+      <div class="setting-row">
+        <label for="border-width">Border width</label>
+        <input type="range" id="border-width" min="0.5" max="3" step="0.5" value="0.5">
+        <span id="border-width-value">0.5px</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Color Palette</h3>
+      <p class="setting-description">Choose a color scheme for the anomaly visualization</p>
+      <div class="color-palette-options">
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="default" checked>
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #ff004e, #ffffff, #1c6eec);"></span>
+          </span>
+          <span class="color-label">Red-White-Blue (Default)</span>
+        </label>
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="viridis">
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #440154, #21918c, #fde725);"></span>
+          </span>
+          <span class="color-label">Viridis (Colorblind Safe)</span>
+        </label>
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="cividis">
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #00204d, #7c7b78, #ffea46);"></span>
+          </span>
+          <span class="color-label">Cividis (Colorblind Safe)</span>
+        </label>
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="brown-teal">
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #8c510a, #f5f5f5, #01665e);"></span>
+          </span>
+          <span class="color-label">Brown-Teal (Colorblind Safe)</span>
+        </label>
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="purple-green">
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #762a83, #f7f7f7, #1b7837);"></span>
+          </span>
+          <span class="color-label">Purple-Green (Colorblind Safe)</span>
+        </label>
+        <label class="color-option">
+          <input type="radio" name="color-palette" value="rainbow">
+          <span class="color-preview">
+            <span class="color-swatch" style="background: linear-gradient(to right, #d73027, #fee08b, #a6d96a, #1a6698);"></span>
+          </span>
+          <span class="color-label">Red-Yellow-Green-Blue</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-buttons">
+      <button id="settings-close">Close</button>
+    </div>
   </div>
 </div>
 

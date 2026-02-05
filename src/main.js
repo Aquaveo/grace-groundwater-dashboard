@@ -90,7 +90,7 @@ const generateStops = () => {
 };
 
 
-const zarrUrl = "https://d2grb3c773p1iz.cloudfront.net/groundwater/grace025gwanomaly.zarr";
+const zarrUrl = "https://d2grb3c773p1iz.cloudfront.net/groundwater/graceanomalies025.zarr3";
 // Map elements
 const arcgisMap = document.querySelector("arcgis-map");
 const arcgisLayerList = document.querySelector("arcgis-layer-list");
@@ -107,7 +107,7 @@ const appInstructions = timeseriesPlotDiv.innerHTML
 
 // todo: start these fetches all async in the same bit
 const coordsPromise = getOrFetchCoords({zarrUrl});
-const lweStore = new FetchStore(zarrUrl + "/lwe_thickness_anomaly");
+const lweStore = new FetchStore(zarrUrl + "/lwe_thickness");
 const lweNode = await open.v3(lweStore);
 const uncStore = new FetchStore(zarrUrl + "/uncertainty");
 const uncNode = await open.v3(uncStore);

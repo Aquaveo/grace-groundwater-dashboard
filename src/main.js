@@ -35,55 +35,75 @@ Plotly.register([Scatter]);
 
 // Configuration state
 const displayConfig = {
-  showBorders: true,
+  showBorders: false,
   borderWidth: 0.5,
-  colorPalette: "default"
+  colorPalette: "default",
+  dynamicColorScale: false,  // toggle for dynamic vs fixed color scale
+  maxValue: 30,              // dynamic max (calculated from data when enabled)
+  fixedMaxValue: 30          // fixed max (always 30)
 };
 
-// Color palettes - stops array allows flexible number of color stops
+// Color palettes - use normalized positions (-1 to 1) that get scaled to actual data range
 const colorPalettes = {
   default: [
-    {value: -30, color: "#ff004e", label: "-30 cm"},
-    {value: 0, color: "#ffffff", label: "0"},
-    {value: 30, color: "#1c6eec", label: "30 cm"}
+    {position: -1, color: "#ff004e"},
+    {position: 0, color: "#ffffff"},
+    {position: 1, color: "#1c6eec"}
   ],
   viridis: [
-    {value: -30, color: "#440154", label: "-30 cm"},
-    {value: 0, color: "#21918c", label: "0"},
-    {value: 30, color: "#fde725", label: "30 cm"}
+    {position: -1, color: "#440154"},
+    {position: 0, color: "#21918c"},
+    {position: 1, color: "#fde725"}
   ],
   cividis: [
-    {value: -30, color: "#00204d", label: "-30 cm"},
-    {value: 0, color: "#7c7b78", label: "0"},
-    {value: 30, color: "#ffea46", label: "30 cm"}
+    {position: -1, color: "#00204d"},
+    {position: 0, color: "#7c7b78"},
+    {position: 1, color: "#ffea46"}
   ],
   "brown-teal": [
-    {value: -30, color: "#8c510a", label: "-30 cm"},
-    {value: 0, color: "#f5f5f5", label: "0"},
-    {value: 30, color: "#01665e", label: "30 cm"}
+    {position: -1, color: "#8c510a"},
+    {position: 0, color: "#f5f5f5"},
+    {position: 1, color: "#01665e"}
   ],
   "purple-green": [
-    {value: -30, color: "#762a83", label: "-30 cm"},
-    {value: 0, color: "#f7f7f7", label: "0"},
-    {value: 30, color: "#1b7837", label: "30 cm"}
+    {position: -1, color: "#762a83"},
+    {position: 0, color: "#f7f7f7"},
+    {position: 1, color: "#1b7837"}
   ],
   "rainbow": [
-    {value: -30, color: "#d73027", label: "-30 cm"},
-    {value: -10, color: "#fee08b", label: "-10 cm"},
-    {value: 10, color: "#a6d96a", label: "10 cm"},
-    {value: 30, color: "#1a6698", label: "30 cm"}
+    {position: -1, color: "#d73027"},
+    {position: -0.33, color: "#fee08b"},
+    {position: 0.33, color: "#a6d96a"},
+    {position: 1, color: "#1a6698"}
   ]
+};
+
+// Generate color stops scaled to max value (dynamic or fixed based on toggle)
+const generateStops = () => {
+  const palette = colorPalettes[displayConfig.colorPalette];
+  const maxVal = displayConfig.dynamicColorScale ? displayConfig.maxValue : displayConfig.fixedMaxValue;
+  return palette.map(({position, color}) => {
+    const value = Math.round(position * maxVal);
+    const label = value === 0 ? "0" : `${value} cm`;
+    return {value, color, label};
+  });
 };
 
 
 const zarrUrl = "https://d2grb3c773p1iz.cloudfront.net/groundwater/grace025gwanomaly.zarr";
-
+// Map elements
 const arcgisMap = document.querySelector("arcgis-map");
 const arcgisLayerList = document.querySelector("arcgis-layer-list");
 const sketchTool = document.querySelector("arcgis-sketch");
 const timeSlider = document.querySelector("arcgis-time-slider");
 const timeseriesPlotDiv = document.getElementById("timeseries-plot");
 const appInstructions = timeseriesPlotDiv.innerHTML
+  // Settings modal
+  const settingsModal = document.getElementById("settings-modal");
+  const borderToggle = document.getElementById("border-toggle");
+  const borderWidthSlider = document.getElementById("border-width");
+  const borderWidthValue = document.getElementById("border-width-value");
+  const dynamicScaleToggle = document.getElementById("dynamic-scale-toggle");
 
 // todo: start these fetches all async in the same bit
 const coordsPromise = getOrFetchCoords({zarrUrl});
@@ -215,6 +235,35 @@ const main = async ({polygon, zoomPromise}) => {
   smaUncValues = await smaUncValues;
   twsaUncValues = await twsaUncValues;
 
+  // Get indices of cells that pass the display threshold (frac >= 0.35)
+  const displayThreshold = 0.35;
+  const validCellIndices = intersectingCells
+    .map((cell, idx) => (cell.intersects && cell.frac >= displayThreshold) ? idx : -1)
+    .filter(idx => idx !== -1);
+
+  // Calculate max absolute value only for displayed cells
+  const findMaxAbsForValidCells = (data, shape, validIndices) => {
+    const [T, nLat, nLon] = shape;
+    const sliceSize = nLat * nLon;
+    let max = 0;
+    for (let t = 0; t < T; t++) {
+      const timeOffset = t * sliceSize;
+      for (const idx of validIndices) {
+        const val = data[timeOffset + idx];
+        if (!Number.isNaN(val) && Math.abs(val) > max) {
+          max = Math.abs(val);
+        }
+      }
+    }
+    return max;
+  };
+  const maxAbs = Math.max(
+    findMaxAbsForValidCells(gwaValues.data, gwaValues.shape, validCellIndices),
+    findMaxAbsForValidCells(smaValues.data, smaValues.shape, validCellIndices),
+    findMaxAbsForValidCells(twsaValues.data, twsaValues.shape, validCellIndices)
+  );
+  displayConfig.maxValue = Math.ceil(maxAbs) || 30; // round up, fallback to 30 if no valid cells
+
   const gwaMeanTimeSeries = meanIgnoringNaN(gwaValues.data, gwaValues.shape, gwaValues.stride);
   const smaMeanTimeSeries = meanIgnoringNaN(smaValues.data, smaValues.shape, smaValues.stride);
   const twsaMeanTimeSeries = meanIgnoringNaN(twsaValues.data, twsaValues.shape, twsaValues.stride);
@@ -308,7 +357,7 @@ const main = async ({polygon, zoomPromise}) => {
   // ---- Create single cell source with all 3 value fields ----
   const cellSource = intersectingCells
     .map(({lon, lat, frac, cell, intersects}, idx) => {
-      if (!intersects || frac < 0.35) return null;
+      if (!intersects || frac < displayThreshold) return null;
       return new Graphic({
         geometry: cell,
         attributes: {
@@ -338,7 +387,6 @@ const main = async ({polygon, zoomPromise}) => {
 
   // Create renderer for a given field using current display config
   const createRenderer = (field) => {
-    const stops = colorPalettes[displayConfig.colorPalette];
     return {
       type: "simple",
       symbol: {
@@ -350,9 +398,10 @@ const main = async ({polygon, zoomPromise}) => {
       visualVariables: [{
         type: "color",
         field,
-        stops,
+        stops: generateStops(),
         legendOptions: {
-          title: "Liquid Water Equivalent (cm)"
+          title: "Liquid Water Equivalent (cm)",
+          showLegend: true  // show the color ramp
         }
       }]
     };
@@ -565,12 +614,6 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
     }
   });
 
-  // Settings modal
-  const settingsModal = document.getElementById("settings-modal");
-  const borderToggle = document.getElementById("border-toggle");
-  const borderWidthSlider = document.getElementById("border-width");
-  const borderWidthValue = document.getElementById("border-width-value");
-
   document.querySelector("#settings-button").addEventListener("click", () => {
     settingsModal.classList.toggle("hidden");
   });
@@ -590,7 +633,6 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
     const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "GRACE Anomalies");
     if (!anomalyCellsGroup?.layers) return;
 
-    const stops = colorPalettes[displayConfig.colorPalette];
     anomalyCellsGroup.layers.forEach((layer) => {
       const field = layer.renderer?.visualVariables?.[0]?.field;
       if (!field) return;
@@ -603,12 +645,16 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
             ? {color: [0, 0, 0, 1], width: displayConfig.borderWidth}
             : {color: [0, 0, 0, 0], width: 0}
         },
+        legendOptions: {
+          showLegend: false  // hide the polygon symbol in legend
+        },
         visualVariables: [{
           type: "color",
           field,
-          stops,
+          stops: generateStops(),
           legendOptions: {
-            title: "Liquid Water Equivalent (cm)"
+            title: "Liquid Water Equivalent (cm)",
+            showLegend: true  // show the color ramp
           }
         }]
       };
@@ -634,5 +680,11 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
       displayConfig.colorPalette = e.target.value;
       updateAnomalyCellRenderers();
     });
+  });
+
+  // Dynamic color scale toggle
+  dynamicScaleToggle.addEventListener("change", (e) => {
+    displayConfig.dynamicColorScale = e.target.checked;
+    updateAnomalyCellRenderers();
   });
 });

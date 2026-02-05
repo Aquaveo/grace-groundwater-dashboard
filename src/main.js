@@ -391,14 +391,14 @@ const main = async ({polygon, zoomPromise}) => {
 
   // Group layer with exclusive visibility (only one visible at a time)
   const anomalyCellsGroup = new GroupLayer({
-    title: "Anomaly Cells",
+    title: "GRACE Anomalies",
     visibilityMode: "exclusive",
     layers: [gwaLayer, smaLayer, twsaLayer],
     visible: true
   });
 
   // Remove existing group if present and add new one
-  const possiblyExistingGroup = arcgisMap.map.layers.find(l => l.title === "Anomaly Cells");
+  const possiblyExistingGroup = arcgisMap.map.layers.find(l => l.title === "GRACE Anomalies");
   if (possiblyExistingGroup) arcgisMap.map.layers.remove(possiblyExistingGroup);
   await zoomPromise;
   arcgisMap.map.layers.add(anomalyCellsGroup, 0);
@@ -488,7 +488,7 @@ const resetLayers = () => {
   arcgisMap.view.goTo(boundaryLayer.fullExtent);
   timeSlider.widget.stop();
   timeseriesPlotDiv.innerHTML = appInstructions;
-  const possiblyExistingLayer = arcgisMap.map.layers.find(l => l.title === "Anomaly Cells");
+  const possiblyExistingLayer = arcgisMap.map.layers.find(l => l.title === "GRACE Anomalies");
   if (possiblyExistingLayer) arcgisMap.map.layers.remove(possiblyExistingLayer);
 }
 
@@ -520,7 +520,7 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
           icon: "zoom-out-fixed"
         }
       ]];
-    } else if (item.layer.title === "Anomaly Cells") {
+    } else if (item.layer.title === "GRACE Anomalies") {
       item.open = true;
       item.actionsSections = [[
         {
@@ -536,7 +536,7 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
     if (event.detail.action.id === "full-extent-aquifers") {
       arcgisMap.view.goTo(boundaryLayer.fullExtent);
     } else if (event.detail.action.id === "full-extent-anomaly-cells") {
-      const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "Anomaly Cells");
+      const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "GRACE Anomalies");
       if (anomalyCellsGroup?.layers?.length) {
         arcgisMap.view.goTo(anomalyCellsGroup.layers.getItemAt(0).fullExtent);
       }
@@ -584,7 +584,7 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
 
   // Function to update all anomaly cell layer renderers
   const updateAnomalyCellRenderers = () => {
-    const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "Anomaly Cells");
+    const anomalyCellsGroup = arcgisMap.map.layers.find(l => l.title === "GRACE Anomalies");
     if (!anomalyCellsGroup?.layers) return;
 
     const stops = colorPalettes[displayConfig.colorPalette];

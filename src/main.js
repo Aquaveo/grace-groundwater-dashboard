@@ -240,7 +240,7 @@ const main = async ({polygon, zoomPromise}) => {
     {
       title: {text: "Mean Anomaly Time Series with Uncertainty", font: {size: 14, color: "#333"}},
       xaxis: {title: {text: "Time", font: {size: 12, color: "#333"}}, automargin: true},
-      yaxis: {title: {text: "Anomaly (cm)", font: {size: 12, color: "#333"}}, automargin: true},
+      yaxis: {title: {text: "Liquid Water Equivalent (cm)", font: {size: 12, color: "#333"}}, automargin: true},
       legend: {orientation: "h", y: -0.2},
     },
     {
@@ -350,7 +350,10 @@ const main = async ({polygon, zoomPromise}) => {
       visualVariables: [{
         type: "color",
         field,
-        stops
+        stops,
+        legendOptions: {
+          title: "Liquid Water Equivalent (cm)"
+        }
       }]
     };
   };
@@ -603,7 +606,10 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
         visualVariables: [{
           type: "color",
           field,
-          stops
+          stops,
+          legendOptions: {
+            title: "Liquid Water Equivalent (cm)"
+          }
         }]
       };
     });

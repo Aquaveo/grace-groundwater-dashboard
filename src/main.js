@@ -245,6 +245,63 @@ const main = async ({polygon, zoomPromise}) => {
     },
     {
       responsive: true,
+      toImageButtonOptions: {
+        format: "png",
+        filename: "grace_anomaly_timeseries",
+        height: 600,
+        width: 1200,
+        scale: 2
+      },
+      modeBarButtonsToAdd: [
+        {
+          name: "Download CSV",
+          icon: Plotly.Icons.disk,
+          click: function(gd) {
+            // Separate line traces from uncertainty band traces
+            const lineTraces = gd.data.filter(t => t.mode === "lines");
+            const bandTraces = gd.data.filter(t => t.fill === "toself");
+
+            const dates = lineTraces[0]?.x || [];
+            const n = dates.length;
+
+            // Build headers: Date, then for each series: value, upper, lower
+            const headers = ["Date"];
+            lineTraces.forEach(t => {
+              headers.push(t.name, `${t.name}_upper`, `${t.name}_lower`);
+            });
+
+            // Build rows
+            const rows = dates.map((date, i) => {
+              const dateStr = new Date(date).toISOString().split("T")[0];
+              const values = [dateStr];
+
+              lineTraces.forEach((lineTrace) => {
+                const centerVal = lineTrace.y[i] ?? "";
+                // Find matching uncertainty band by legendgroup
+                const band = bandTraces.find(b => b.legendgroup === lineTrace.legendgroup);
+                let upperVal = "";
+                let lowerVal = "";
+                if (band && band.y.length === 2 * n) {
+                  upperVal = band.y[i] ?? "";
+                  lowerVal = band.y[2 * n - 1 - i] ?? "";
+                }
+                values.push(centerVal, upperVal, lowerVal);
+              });
+
+              return values.join(",");
+            });
+
+            const csv = [headers.join(","), ...rows].join("\n");
+            const blob = new Blob([csv], {type: "text/csv"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "grace_anomaly_data.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+      ]
     }
   );
 
@@ -300,7 +357,7 @@ const main = async ({polygon, zoomPromise}) => {
 
   // 3 FeatureLayers sharing the same source, each with renderer for different field
   const gwaLayer = new FeatureLayer({
-    title: "Groundwater",
+    title: "Groundwater Storage",
     source: cellSource,
     objectIdField: "oid",
     fields: cellFields,

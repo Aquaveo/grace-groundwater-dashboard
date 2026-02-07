@@ -119,10 +119,9 @@ const timeDates = Array.from(timeIntegers.data).map((t) => {
   baseDate.setUTCDate(baseDate.getUTCDate() + Number(t));
   return baseDate;
 });
-
 const boundaryLayer = new GeoJSONLayer({
   title: "Aquifer Boundaries",
-  url: "./aquifers.geojson",
+  url: new URL("/aquifers.geojson", import.meta.url).href,
   outFields: ["*"],
   definitionExpression: "1=1", // start with none selected
   renderer: {

@@ -30,6 +30,7 @@ import Scatter from "plotly.js/lib/scatter";
 import {cellPolygonFromCenter} from "./cells.js";
 import {getOrFetchCoords} from "./db.js";
 import {createLinePlot, createUncertaintyBand, meanIgnoringNaN} from "./helpers.js";
+import {parseGeoJSONFile} from "./polygonUploads.js";
 
 Plotly.register([Scatter]);
 
@@ -184,6 +185,7 @@ const analyzeDrawnPolygon = async ({polygon}) => {
     await shapePreservingProjectOperator.load()
     polygon = shapePreservingProjectOperator.execute(polygon, SpatialReference.WGS84);
   }
+  boundaryLayer.visible = false;
   const zoomPromise = arcgisMap.view.goTo(polygon.extent);
   await main({polygon, zoomPromise});
 }
@@ -535,6 +537,7 @@ const main = async ({polygon, zoomPromise}) => {
 
 const resetLayers = () => {
   sketchTool.layer.removeAll();
+  boundaryLayer.visible = true;
   boundaryLayer.definitionExpression = "1=1"; // reset to none selected
   arcgisMap.view.goTo(boundaryLayer.fullExtent);
   timeSlider.widget.stop();
@@ -597,7 +600,7 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
   })
 
   document
-    .querySelector("calcite-action#refresh-layers")
+    .querySelector("#refresh-layers")
     .addEventListener("click", async () => resetLayers());
 
   document
@@ -685,5 +688,131 @@ arcgisMap.addEventListener("arcgisViewReadyChange", async () => {
   dynamicScaleToggle.addEventListener("change", (e) => {
     displayConfig.dynamicColorScale = e.target.checked;
     updateAnomalyCellRenderers();
+  });
+
+  // ---- Upload modal ----
+  const uploadModal = document.getElementById("upload-modal");
+  const uploadDropZone = document.getElementById("upload-drop-zone");
+  const uploadFileInput = document.getElementById("upload-file-input");
+  const uploadBrowseButton = document.getElementById("upload-browse-button");
+  const uploadFileInfo = document.getElementById("upload-file-info");
+  const uploadFileName = document.getElementById("upload-file-name");
+  const uploadClearFile = document.getElementById("upload-clear-file");
+  const uploadError = document.getElementById("upload-error");
+  const uploadSubmit = document.getElementById("upload-submit");
+  const uploadCancel = document.getElementById("upload-cancel");
+
+  let selectedFile = null;
+
+  const resetUploadModal = () => {
+    selectedFile = null;
+    uploadFileInput.value = "";
+    uploadFileInfo.classList.add("hidden");
+    uploadFileName.textContent = "";
+    uploadError.classList.add("hidden");
+    uploadError.textContent = "";
+    uploadSubmit.disabled = true;
+    uploadSubmit.textContent = "Analyze";
+    uploadDropZone.classList.remove("hidden");
+  };
+
+  const showUploadError = (message) => {
+    uploadError.textContent = message;
+    uploadError.classList.remove("hidden");
+  };
+
+  const handleFileSelection = (file) => {
+    uploadError.classList.add("hidden");
+    uploadError.textContent = "";
+
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".geojson") && !name.endsWith(".json")) {
+      showUploadError("Invalid file type. Please upload a .geojson or .json file.");
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      showUploadError("File is too large. Maximum file size is 50 MB.");
+      return;
+    }
+
+    selectedFile = file;
+    uploadFileName.textContent = file.name;
+    uploadFileInfo.classList.remove("hidden");
+    uploadDropZone.classList.add("hidden");
+    uploadSubmit.disabled = false;
+  };
+
+  document.getElementById("upload-button").addEventListener("click", () => {
+    resetUploadModal();
+    uploadModal.classList.toggle("hidden");
+  });
+
+  uploadModal.addEventListener("click", (e) => {
+    if (e.target.id === "upload-modal") {
+      e.target.classList.add("hidden");
+    }
+  });
+
+  uploadCancel.addEventListener("click", () => {
+    uploadModal.classList.add("hidden");
+  });
+
+  uploadBrowseButton.addEventListener("click", () => {
+    uploadFileInput.click();
+  });
+
+  uploadFileInput.addEventListener("change", (e) => {
+    if (e.target.files.length > 0) {
+      handleFileSelection(e.target.files[0]);
+    }
+  });
+
+  uploadClearFile.addEventListener("click", () => {
+    resetUploadModal();
+  });
+
+  uploadDropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    uploadDropZone.classList.add("drag-over");
+  });
+
+  uploadDropZone.addEventListener("dragleave", () => {
+    uploadDropZone.classList.remove("drag-over");
+  });
+
+  uploadDropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadDropZone.classList.remove("drag-over");
+    if (e.dataTransfer.files.length > 0) {
+      handleFileSelection(e.dataTransfer.files[0]);
+    }
+  });
+
+  uploadSubmit.addEventListener("click", async () => {
+    if (!selectedFile) return;
+
+    uploadSubmit.disabled = true;
+    uploadSubmit.textContent = "Processing...";
+    uploadError.classList.add("hidden");
+
+    try {
+      const {polygon} = await parseGeoJSONFile(selectedFile);
+      uploadModal.classList.add("hidden");
+      sketchTool.layer.removeAll();
+      sketchTool.layer.add(new Graphic({
+        geometry: polygon,
+        symbol: {
+          type: "simple-fill",
+          color: [255, 255, 255, 0],
+          outline: {color: [0, 0, 0, 1], width: 2}
+        }
+      }));
+      analyzeDrawnPolygon({polygon});
+    } catch (err) {
+      showUploadError(err.message);
+      uploadSubmit.disabled = false;
+      uploadSubmit.textContent = "Analyze";
+    }
   });
 });

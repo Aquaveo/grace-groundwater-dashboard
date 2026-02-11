@@ -11,6 +11,12 @@
 <div class="nav-bar">
   <h1>GEOGLOWS GRACE Groundwater Assessment</h1>
   <div class="nav-buttons">
+    <button id="refresh-layers" class="icon-button" title="Reset">
+      <calcite-icon icon="refresh" scale="l"></calcite-icon>
+    </button>
+    <button id="upload-button" class="icon-button" title="Upload GeoJSON">
+      <calcite-icon icon="upload" scale="l"></calcite-icon>
+    </button>
     <button id="settings-button" class="icon-button" title="Settings">
       <calcite-icon icon="gear" scale="l"></calcite-icon>
     </button>
@@ -32,13 +38,12 @@
     <arcgis-layer-list slot="top-right"></arcgis-layer-list>
     <!-- Bottom-left: Reference -->
     <arcgis-legend slot="bottom-left"></arcgis-legend>
-    <calcite-action slot="bottom-left" icon="refresh" id="refresh-layers"></calcite-action>
     <arcgis-scale-bar slot="bottom-left" bar-style="line" unit="dual"></arcgis-scale-bar>
     <!-- Bottom-right: Primary tool -->
     <arcgis-time-slider slot="bottom-right" play-rate="1000" layout="auto"></arcgis-time-slider>
   </arcgis-map>
   <div id="timeseries-plot" class="chart-container">
-    <div class="centered-message">Select an aquifer or use the drawing tools to draw a polygon to get started.</div>
+    <div class="centered-message">Select an aquifer, draw a polygon, or upload a boundary geojson to get started.</div>
   </div>
 </div>
 
@@ -133,12 +138,42 @@
     <p>Select an area to analyze:</p>
     <ul>
       <li>Click on an aquifer boundary on the map, or</li>
-      <li>Use the drawing tools (top-right of map) to draw a custom region</li>
+      <li>Use the drawing tools (top-right of map) to draw a custom region, or</li>
+      <li>Upload a GeoJSON polygon file using the upload button (top-right of page)</li>
     </ul>
     <p>The time series plot will display the mean groundwater storage anomaly for your selection.</p>
     <p>Use the time slider (bottom-right of map) to animate changes over time.</p>
-    <p>Click the refresh icon (bottom-left of map) to reset and make a new selection.</p>
+    <p>Click the refresh icon (top-right on the navigation bar) to reset the map layers and charts to make a fresh selection.</p>
     <button onclick="document.getElementById('info-modal').classList.toggle('hidden')">Close</button>
+  </div>
+</div>
+
+<div id="upload-modal" class="modal hidden">
+  <div class="modal-content upload-modal">
+    <h2>Upload Polygon</h2>
+    <p class="setting-description">Upload a GeoJSON file containing polygon geometries to analyze GRACE groundwater data within the polygon boundary.</p>
+    <hr>
+
+    <div id="upload-drop-zone" class="upload-drop-zone">
+      <calcite-icon icon="upload" scale="l"></calcite-icon>
+      <p>Drag and drop a GeoJSON file here</p>
+      <p class="setting-description">or</p>
+      <button id="upload-browse-button" class="upload-browse-button">Browse Files</button>
+      <input type="file" id="upload-file-input" accept=".geojson,.json" hidden>
+      <p class="setting-description upload-hint">.geojson or .json files accepted</p>
+    </div>
+
+    <div id="upload-file-info" class="upload-file-info hidden">
+      <span id="upload-file-name"></span>
+      <button id="upload-clear-file" class="upload-clear-button" title="Remove file">&times;</button>
+    </div>
+
+    <div id="upload-error" class="upload-error hidden"></div>
+
+    <div class="modal-buttons">
+      <button id="upload-cancel">Cancel</button>
+      <button id="upload-submit" disabled>Analyze</button>
+    </div>
   </div>
 </div>
 </body>

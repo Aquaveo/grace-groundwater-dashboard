@@ -158,3 +158,119 @@
 .modal-buttons button:hover {
     background: #005a8c;
 }
+
+/* Upload Modal Styles */
+.upload-modal {
+    max-width: 500px;
+}
+
+.upload-drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    margin: 16px 0;
+}
+
+.upload-drop-zone:hover,
+.upload-drop-zone.drag-over {
+    border-color: #0079c1;
+    background-color: #e6f3fa;
+}
+
+.upload-drop-zone.hidden {
+    display: none;
+}
+
+.upload-drop-zone calcite-icon {
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.upload-drop-zone p {
+    margin: 4px 0;
+    color: #666;
+}
+
+.upload-browse-button {
+    padding: 8px 20px;
+    border: 1px solid #0079c1;
+    border-radius: 4px;
+    background: white;
+    color: #0079c1;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 8px 0;
+}
+
+.upload-browse-button:hover {
+    background: #e6f3fa;
+}
+
+.upload-hint {
+    font-size: 12px !important;
+    color: #999 !important;
+    margin-top: 8px !important;
+}
+
+.upload-file-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f0f7ff;
+    border: 1px solid #0079c1;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.upload-file-info.hidden {
+    display: none;
+}
+
+.upload-clear-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.upload-clear-button:hover {
+    color: #d73027;
+}
+
+.upload-error {
+    padding: 10px 14px;
+    background: #fef0f0;
+    border: 1px solid #d73027;
+    border-radius: 6px;
+    color: #d73027;
+    font-size: 13px;
+    margin: 12px 0;
+}
+
+.upload-error.hidden {
+    display: none;
+}
+
+.upload-modal .modal-buttons button#upload-cancel {
+    background: white;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.upload-modal .modal-buttons button#upload-cancel:hover {
+    background: #f5f5f5;
+}
+
+.upload-modal .modal-buttons button#upload-submit:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
